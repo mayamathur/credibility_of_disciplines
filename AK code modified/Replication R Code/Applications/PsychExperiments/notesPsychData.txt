@@ -1,0 +1,8 @@
+Notes on Psych replication data:
+
+effect size original: column BG
+effect size replication: column BZ
+(entries look strange, though)
+
+p-value original: BA
+p-value replication: BS

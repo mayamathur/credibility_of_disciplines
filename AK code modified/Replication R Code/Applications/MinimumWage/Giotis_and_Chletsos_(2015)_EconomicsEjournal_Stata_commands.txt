@@ -1,0 +1,29 @@
+Datasets constructed by Dr. Georgios P. Giotis, University of Ioannina, Department of Economics, ggiotis@cc.uoi.gr
+
+Figure 1: 	(Using the “DATA ELASTICITIES” meta-sample)
+		twoway (scatter onese elasticity)
+
+Figure 2: 	(Using the “DATA COEFFICIENTS” meta-sample)
+		twoway (scatter onese coefficient)
+
+Table 4: 	(Columns (1)-(4) use the “DATA ELASTICITIES” meta-sample and columns (5)-(8) use the “DATA COEFFICIENTS” meta-sample)
+Columns (1)&(5)	reg tstat onese
+Columns (2)&(6)	reg tstat onese, robust
+Columns (3)&(7)	metareg tstat onese, wsse(standarderrors)
+Columns (4)&(8)	reg tstat onese [aweight=onese]
+
+Table 6:	(Using the “DATA ELASTICITIES” meta-sample)
+Column (1)	reg tstat onese didse usase europese mwlaggedse doublelogse teenagersse youthse hoursse kaitzse dummyse retailse otherindustryorgroupofindustries
+Column (2)	reg tstat onese didse usase europese mwlaggedse doublelogse teenagersse youthse hoursse dummyse retailse otherindustryorgroupofindustries, robust
+Column (3)	metareg tstat onese didse usase europese mwlaggedse doublelogse teenagersse youthse hoursse kaitzse dummyse retailse otherindustryorgroupofindustries, wsse(standarderrors)
+Column (4)	reg tstat onese didse usase europese mwlaggedse doublelogse panelorcrossse teenagersse youthse hoursse educse kaitzse dummyse retailse otherindustryorgroupofindustries [aweight=onese]
+
+Table 7:	(Using the “DATA COEFFICIENTS” meta-sample)
+Column (1)	reg tstat onese endogeneityse europese youthse fese educse kaitzse dummyse foodbeveragedrinkingse otherindustryorgroupofindustries
+Column (2)	reg tstat  onese endogeneityse  usase youthse fese educse dummyse  retailse foodbeveragedrinkingse otherindustryorgroupofindustries, robust
+Column (3)	metareg tstat onese endogeneityse europese youthse fese educse kaitzse dummyse foodbeveragedrinkingse otherindustryorgroupofindustries, wsse(standarderrors)
+Column (4)	reg tstat onese endogeneityse fese educse kaitzse [aweight=onese]
+
+
+
+
