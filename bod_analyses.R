@@ -46,8 +46,8 @@ mu = 0
 # THEN READ IOANNIDIS' PAPER TO UNDERSTAND WHAT EXACTLY HE TRIED TO ESTIMATE AND WHY IT'S WRONG
 
 source("helper.R")
-credibility( .n = 1000,
-               .plot.n = 800,
+credibility( .n = 5000,
+               .plot.n = 5000,
                .bp0 = bp0,
                .bp1 = bp1,
                .bp2 = 1,
@@ -57,7 +57,9 @@ credibility( .n = 1000,
                .thresh = c(0, .1, .5),
                .incl.ref = TRUE,
                .scale = "X",
-               .plot.type = "ECDF.theta" )
+               .plot.type = "ECDF.Z" )
+
+
 
 
 
@@ -65,8 +67,6 @@ credibility( .n = 1000,
 
 
 ######## Sanity Check: Simulate Using MLEs ########
-
-
 
 
 ######## The Answer ########

@@ -173,7 +173,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
       stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta[ Dp$signif.pos == TRUE ] ),
                      aes( color = "No selectivity (publish everything)" ), lwd=1 ) +
       theme_bw() +
-      xlab("True effect size") + ylab("Proportion above") + ggtitle( "1 - ECDF") +
+      xlab("True effect size") + ylab("Proportion above") + ggtitle( "1 - ECDF of true effect sizes among published, significant studies") +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
       scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05)) +
       scale_color_manual( name=" ", values=colors )
@@ -189,12 +189,24 @@ credibility = function( .n = 100000, .plot.n = 1000,
   ##### ECDF Of Z-Scores #####
   
   if ( .plot.type == "ECDF.Z" ) {
+    
+    # get AK data for empirical comparison
+    setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git")
+    s = read.csv("Data from Ioannidis/full_data.csv")
+    
+    colors = c("red", "grey", "orange")
+
     E2 = ggplot( data = dp, aes( dp$Zi ) ) +
-      stat_ecdf(geom = "step") +
-      stat_ecdf( data = d, aes(x = d$Zi), color = "blue" ) +  # ECDF without selectivity (all findings)
+      stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
+      stat_ecdf( aes( color = "With selectivity (MLEs)" ), show.legend = TRUE, lwd = 1.5 ) +  # ECDF of simulated data
+      stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
       theme_bw() +
-      scale_color_manual(values=colors) +
-      xlab("Z-score") + ylab("Proportion below")
+      scale_color_manual( name = " ", values = colors) +
+      scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
+      scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05)) +
+      geom_vline( xintercept = c(-1.64, 1.64, 1.96, -1.96), linetype=2, color = "red" ) +
+      xlab("Z-score") + ylab("Proportion below") +
+      ggtitle("ECDF of published Z-scores")
     plot(E2)
   }
   
