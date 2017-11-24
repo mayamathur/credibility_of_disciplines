@@ -150,7 +150,9 @@ credibility = function( .n = 100000, .plot.n = 1000,
       #geom_rect( aes( xmin = 1.96, xmax = Inf, ymin = -Inf, ymax = Inf ), fill = "orange", alpha=0.3 ) +
       annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange") +
       theme_bw() +
-      xlab("Study estimate") + ylab("True effect size") + ggtitle( "Published findings only") +
+      xlab( paste( "Study estimate on ", .scale, " scale", sep = "" ) ) +
+      ylab( paste( "True effect size on ", .scale, " scale", sep = "" ) ) +
+      ggtitle( "All studies (shaded: Z > 1.96)") +
       guides(color=guide_legend(title="Published"))
     
     for ( t in .thresh ) {
@@ -173,7 +175,8 @@ credibility = function( .n = 100000, .plot.n = 1000,
       stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta[ Dp$signif.pos == TRUE ] ),
                      aes( color = "No selectivity (publish everything)" ), lwd=1 ) +
       theme_bw() +
-      xlab("True effect size") + ylab("Proportion above") + ggtitle( "1 - ECDF of true effect sizes among published, significant studies") +
+      xlab("True effect size") + ylab("Proportion above") +
+      ggtitle( "1 - ECDF of true effect sizes among published, significant studies") +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
       scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05)) +
       scale_color_manual( name=" ", values=colors )
@@ -198,7 +201,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
 
     E2 = ggplot( data = dp, aes( dp$Zi ) ) +
       stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
-      stat_ecdf( aes( color = "With selectivity (MLEs)" ), show.legend = TRUE, lwd = 1.5 ) +  # ECDF of simulated data
+      stat_ecdf( aes( color = "With user-specified selectivity" ), show.legend = TRUE, lwd = 1.5 ) +  # ECDF of simulated data
       stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
       theme_bw() +
       scale_color_manual( name = " ", values = colors) +
@@ -206,8 +209,14 @@ credibility = function( .n = 100000, .plot.n = 1000,
       scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05)) +
       geom_vline( xintercept = c(-1.64, 1.64, 1.96, -1.96), linetype=2, color = "red" ) +
       xlab("Z-score") + ylab("Proportion below") +
-      ggtitle("ECDF of published Z-scores")
+      ggtitle("Model fit: ECDF of published Z-scores")
     plot(E2)
+    
+    # base R plotting: runs a bit faster
+    # plot( ecdf( s$tr ), xlim=c(-6,6), lwd = 5 )
+    # abline(v=c(-1.96, -1.64, 1.64, 1.96), lty=2, col="red" )
+    # lines( ecdf( d$Zi ), xlim=c(-6,6), col = "green", lwd=2 )  # no selection
+    # lines( ecdf( dp$Zi ), xlim=c(-6,6), col = "orange", lwd=2 )  # with selection
   }
   
   # return dataset invisibly
