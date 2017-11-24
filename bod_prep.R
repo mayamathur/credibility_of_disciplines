@@ -4,11 +4,10 @@
 #                               LOAD IOANNIDIS DATA
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-
-setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/Analysis/Data from Ioannidis")
+setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git")
 
 library(R.matlab)
-d1 = readMat("data.mat")
+d1 = readMat("Data from Ioannidis/data.mat")
 data = d1$D
 data = data[, , 1]
 
