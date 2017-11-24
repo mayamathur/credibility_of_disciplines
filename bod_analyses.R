@@ -15,7 +15,6 @@ prop.table( table( s$t > 1.64 & s$t < 1.96 ) )
 prop.table( table( s$t < 1.64 ) )
 
 
-
 ############################## RUN AK META-STUDY ALGORITHM ##############################
 
 # run AK algorithm
@@ -40,12 +39,14 @@ bp0 = 1
 bp1 = 0.441
 bp2 = 0.491
 tau = 0.584
+mu = 0
 
 
+# BOOKMARK: WAS GOING TO TRY RUNNING CREDIBILITY THING USING NEW HELPER CODE
+# THEN READ IOANNIDIS' PAPER TO UNDERSTAND WHAT EXACTLY HE TRIED TO ESTIMATE AND WHY IT'S WRONG
 
-
-
-credibility(  .n = 1000,
+source("helper.R")
+credibility( .n = 1000,
                .plot.n = 800,
                .bp0 = bp0,
                .bp1 = bp1,
@@ -53,9 +54,10 @@ credibility(  .n = 1000,
                .mu = mu,
                .SEs = s$SE,
                .tau = tau,
-               .thresh.z = c(0, .1),
+               .thresh = c(0, .1, .5),
                .incl.ref = TRUE,
-               .scale = "X")
+               .scale = "X",
+               .plot.type = "ECDF.theta" )
 
 
 

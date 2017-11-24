@@ -2,8 +2,6 @@
 ############################## HELPER FUNCTIONS ##############################
 
 
-
-
 sim_Z = function( .n, .mu, .tau.tilde,
                   .bp0 = 1, .bp1, .bp2 ) {
   # draw true effect vector
@@ -25,12 +23,13 @@ sim_Z = function( .n, .mu, .tau.tilde,
   
   d$signif.pos = d$Zi > 1.96
   
-  return(d)
+  invisible( return(d) )
 }
 
 
 sim_X = function( .n, .mu, .tau, .SEs,
                   .bp0 = 1, .bp1, .bp2 ) {
+
   # draw true effect vector
   # these parameters should be on Fisher's correlation scale based
   #  on pg. 60 of AK supplement
@@ -56,7 +55,7 @@ sim_X = function( .n, .mu, .tau, .SEs,
   
   d$signif.pos = d$Zi > 1.96
   
-  return(d)
+  invisible( return(d) )
 }
 
 
@@ -76,11 +75,13 @@ credibility = function( .n = 100000, .plot.n = 1000,
                         .bp0, .bp1, .bp2 = 1, .mu,
                         .tau = NA, .SEs,  # only needed if .scale = "X"
                         .tau.tilde = NA, # only needed if .scale = "Z"
-                        .thresh.z = NA,
-                        .thresh.x = NA,
+                        .thresh = NA,
                         .incl.ref = TRUE,
                         .scale,
                         .plot.type ) {
+  
+  #browser()
+
   
   # TEST ONLY
   # .n = 1000
@@ -92,7 +93,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
   # .tau.tilde = tau.tilde
   # .SEs = s$SE * 4
   # .tau = tau
-  # .thresh.z = c(0, .1)
+  # .thresh = c(0, .1)
   # .incl.ref = TRUE
   # .scale = "X"
   
@@ -126,11 +127,11 @@ credibility = function( .n = 100000, .plot.n = 1000,
   
   ##### Credibility: Proportion Above Each Threhsold #####
   # credibility for each threshold
-  prop.above = vapply( X = .thresh.z,
+  prop.above = vapply( X = .thresh,
                        FUN = function(t) sum( d$theta[ d$signif.pos == TRUE ] > t ) / length( d$theta[ d$signif.pos == TRUE ] ),
                        FUN.VALUE = 0.5)
   
-  print( cbind( .thresh.z, prop.above ) )
+  print( cbind( .thresh, prop.above ) )
   
   
   ##### Scatterplot #####
@@ -152,32 +153,35 @@ credibility = function( .n = 100000, .plot.n = 1000,
       xlab("Study estimate") + ylab("True effect size") + ggtitle( "Published findings only") +
       guides(color=guide_legend(title="Published"))
     
-    for ( t in .thresh.z ) {
+    for ( t in .thresh ) {
       scatter = scatter + geom_hline( yintercept = t, linetype=2, color = "red" )
     }
     
-    scatter
+    plot(scatter)
   }
   
   
   ##### ECDF Of True Thetas Among Published Studies #####
   
   if ( .plot.type == "ECDF.theta" ) {
+  
+    colors = c("grey", "orange")
+    
     E1 = ggplot( data = dp[ dp$signif.pos == TRUE, ], aes( x = theta ) ) +
-      # stat_function( fun = function(x) inv_ecdf( value = x, numbers = dp$theta ), color="black", lwd=1.5 ) +
-      # stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta ), color="green", lwd=1 ) +
-      stat_function( fun = function(x) inv_ecdf( value = x, numbers = dp$theta[ dp$signif.pos == TRUE ] ), color="black", lwd=1.5 ) +
-      stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta[ Dp$signif.pos == TRUE ] ), color="green", lwd=1 ) +
+      stat_function( fun = function(x) inv_ecdf( value = x, numbers = dp$theta[ dp$signif.pos == TRUE ] ),
+                     aes( color = "With selectivity (MLEs)" ), lwd=1.5 ) +
+      stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta[ Dp$signif.pos == TRUE ] ),
+                     aes( color = "No selectivity (publish everything)" ), lwd=1 ) +
       theme_bw() +
-      scale_color_manual(values=colors) +
       xlab("True effect size") + ylab("Proportion above") + ggtitle( "1 - ECDF") +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
-      scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05))
+      scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, .05)) +
+      scale_color_manual( name=" ", values=colors )
     
-    for ( t in .thresh.z ) {
+    for ( t in .thresh ) {
       E1 = E1 + geom_vline( xintercept = t, linetype=2, color = "red" )
     }
-    E1
+    plot(E1)
   }
   
   
@@ -185,15 +189,17 @@ credibility = function( .n = 100000, .plot.n = 1000,
   ##### ECDF Of Z-Scores #####
   
   if ( .plot.type == "ECDF.Z" ) {
-    ggplot( data = dp, aes( dp$Zi ) ) +
+    E2 = ggplot( data = dp, aes( dp$Zi ) ) +
       stat_ecdf(geom = "step") +
       stat_ecdf( data = d, aes(x = d$Zi), color = "blue" ) +  # ECDF without selectivity (all findings)
       theme_bw() +
       scale_color_manual(values=colors) +
       xlab("Z-score") + ylab("Proportion below")
+    plot(E2)
   }
   
-  return(d)
+  # return dataset invisibly
+  invisible(d)
   
   
   ##### Sanity checks #####
