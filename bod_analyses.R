@@ -25,6 +25,11 @@ setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of dis
 
 ############################## SIMULATE USING AK'S MLES ##############################
 
+<<<<<<< HEAD
+=======
+source("helper.R")
+
+>>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
 ######## Z scale ########
 
 # from running AK with Z-scores
@@ -34,6 +39,7 @@ bp2Z = 0.4464266
 mu = 0
 tau.tilde = 2.118972  
 
+<<<<<<< HEAD
 source("helper.R")
 credibility( .n = 10000,
                .plot.n = 10000,
@@ -147,9 +153,46 @@ frp_0( O = 1, alpha = 0.05, pwr = .5 )
 
 
 
+=======
+credibility( .n = 5000,
+               .plot.n = 5000,
+               .bp0 = bp0,
+               .bp1 = bp1,
+               .bp2 = bp2,
+               .mu = mu,
+               .tau.tilde = tau.tilde,
+               .thresh = c(0, .1, .5),
+               .incl.ref = TRUE,
+               .scale = "Z",
+               .plot.type = "ECDF.theta" )
 
+>>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
 
+######## X scale ########
 
+# from running AK with raw effect sizes
+bp0 = 1
+bp1 = 0.441
+bp2 = 0.491
+tau = 0.584
+mu = 0
+
+<<<<<<< HEAD
+=======
+# on X scale
+credibility( .n = 5000,
+             .plot.n = 5000,
+             .bp0 = bp0,
+             .bp1 = bp1,
+             .bp2 = bp2,
+             .mu = mu,
+             .SEs = s$SE,
+             .tau = tau,
+             .thresh = c(0, .1, .5),
+             .incl.ref = TRUE,
+             .scale = "X",
+             .plot.type = "ECDF.theta" )
+>>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
 
 
 

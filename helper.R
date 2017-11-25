@@ -301,6 +301,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
     colors = c("red", "grey", "orange")
 
     E2 = ggplot( data = dp, aes( dp$Zi ) ) +
+<<<<<<< HEAD
       stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ),
                  show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
       
@@ -309,6 +310,11 @@ credibility = function( .n = 100000, .plot.n = 1000,
       
       stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ),
                  show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
+=======
+      stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
+      stat_ecdf( aes( color = "With user-specified selectivity" ), show.legend = TRUE, lwd = 1.5 ) +  # ECDF of simulated data
+      stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
+>>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
       theme_bw() +
       scale_color_manual( name = " ", values = colors) +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
