@@ -4,7 +4,8 @@
 # clear memory
 #rm(list=ls())
 # insert your path name here
-pathname = "~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/Analysis/AK code modified/Replication R Code"
+pathname = 
+pathname = "~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git/AK code modified/Replication R Code"
 setwd(pathname)
 # Create a folder "FiguresandTables" under this path to save figures and tables
 setwd("R Code")
@@ -37,7 +38,7 @@ if (identificationapproach == 2) {
       # filepath = "~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/Analysis/Data from Ioannidis/random_sample.csv"
       # 
       # full data
-      filepath = "~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/Analysis/Data from Ioannidis/full_data.csv"
+      filepath = "~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git/Data from Ioannidis/full_data.csv"
       
       my.data<-read.csv(filepath,header=TRUE)
       
@@ -54,12 +55,12 @@ if (identificationapproach == 2) {
       # MM: treating t-values as z-scores
       
       # TO DO ANALYSIS ON EFFECT-SIZE SCALE (TAU)
-      X = my.data$D
-      sigma = my.data$SE
+      # X = my.data$D
+      # sigma = my.data$SE
       
       # TO DO ANALYSIS ON Z-SCORE SCALE (TAU-TILDE)
-      # X = my.data$tr
-      # sigma = rep( 1, length(X) )
+      X = my.data$tr
+      sigma = rep( 1, length(X) )
       
       # from the paper, this is an ID for study
       #  because for min wage data, some studies contributed multiple point estimates
@@ -71,9 +72,8 @@ if (identificationapproach == 2) {
 
       # Set cutoffs to use in step function: should be given in increasing order;
       
-      #cutoffs=c(1.64,1.96) # 2-cutoff case
-      cutoffs = c(1.64, 1.96) # 5-cutoff case
-      
+      cutoffs=c(1.64,1.96) # 2-cutoff case
+
       # Use a step function symmetric around zero
       symmetric=1
      # symmetric_p=0;
@@ -128,7 +128,7 @@ if (identificationapproach == 2) {
 
 #####
 #producing bias-corrected estimates and confidence sets
-#  source("HorizontalBars.R")
+source("HorizontalBars.R")
   
 #output selection bias corrected estimates and confidence sets to a csv file:
 #Z1 is the original z-statistic, Z1_M is median unbiased estimator, Z1_L and Z1_U
