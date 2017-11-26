@@ -25,7 +25,7 @@ d$rej = d$pval < 0.05
 
 
 ##### Probabilistic Mixture Assignment of Effect Sizes #####
-# per Ioannidis paper
+# per Ioannidis' SI
 
 # Cohen's d assuming 2-sample t-test
 d$D2 = ( 2 * d$tvalues ) / sqrt( d$df + 2 )
@@ -65,8 +65,12 @@ mean(d$df)
 # matches :) 
 aggregate( D ~ rej, FUN = median, data = d )
 
-# 64% were significant
-prop.table( table( d$rej) )
+# 31% nonsignificant
+# 6% marginally significant
+# 63% significant (matches Ioannidis pg. 5 result)
+prop.table( table( d$t > 1.96 ) )
+prop.table( table( d$t > 1.64 & d$t < 1.96 ) )
+prop.table( table( d$t < 1.64 ) )
 
 # number with df > 30 (good for Z approximation)
 table(sign(d$tvalues)) # already sign-normalized because none are negative

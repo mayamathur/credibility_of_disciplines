@@ -128,6 +128,7 @@ if (identificationapproach == 2) {
 
 #####
 #producing bias-corrected estimates and confidence sets
+# MM NOTE: TAKES FOREVER TO RUN
 source("HorizontalBars.R")
   
 #output selection bias corrected estimates and confidence sets to a csv file:

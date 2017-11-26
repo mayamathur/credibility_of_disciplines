@@ -107,6 +107,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
                         .scale,
                         .plot.type ) {
 
+
   # TEST ONLY
   #  browser()
   # .n = 1000
@@ -128,61 +129,65 @@ credibility = function( .n = 100000, .plot.n = 1000,
   if ( .scale == "Z" ) {
     d = sim_Z( .n = .n, .mu = .mu, .tau.tilde = .tau.tilde,
                .bp0 = .bp0, .bp1 = .bp1, .bp2 = .bp2 )
+    d$xvar = d$Zi  # for plotting
   } else {
     d = sim_X( .n = .n, .mu = .mu, .tau = .tau, .SEs = .SEs,
                .bp0 = .bp0, .bp1 = .bp1, .bp2 = .bp2 )
+    d$xvar = d$Xi
   }
+  
+  # is study estimate farther from null than truth or in wrong direction?
+  d$bigger = FALSE
+  d$bigger[ d$theta > 0 ] = d$xvar[ d$theta > 0 ] > d$theta[ d$theta > 0 ]
+  d$bigger[ d$theta < 0 ] = d$xvar[ d$theta < 0 ] < d$theta[ d$theta < 0 ]
   
   dp = d[ d$publish == TRUE, ]
   
 
-  ##### Proximity: Proportion Within Caliper of Truth #####
-  if ( .scale == "X" & !is.na(.prox) ) {
-   
-    # uses caliper as proportion
-    # prop.calip = vapply( X = .prox,
-    #                      FUN = function(t) sum( abs( temp$Xi - temp$theta ) <= t * abs( temp$theta ) ) /
-    #                        nrow(temp),
-    #                      FUN.VALUE = 0.5)
-    
-    # uses caliper as absolute deviation
-    prop.calip = vapply( X = .prox,
-                         FUN = function(t) sum( abs( dp$Xi - dp$theta ) <= t ) /
-                           nrow(dp),
-                         FUN.VALUE = 0.5 )
-    print( cbind( .prox, prop.calip ) )
-  }
-  
-  if ( .scale == "Z" & !is.na(.prox) ) {
 
+  ##### Proximity: Proportion Within Caliper of Truth #####
+  if ( any( !is.na(.prox) ) ) {
+
+    # published
     prop.calip = vapply( X = .prox,
-                         FUN = function(t) sum( abs( dp$Zi - dp$theta ) <= t ) /
+                         FUN = function(t) sum( abs( dp$xvar - dp$theta ) <= t ) /
                            nrow(dp),
                          FUN.VALUE = 0.5 )
+    # no selectivity
+    prop.calip2 = vapply( X = .prox,
+                         FUN = function(t) sum( abs( d$xvar - d$theta ) <= t ) /
+                           nrow(d),
+                         FUN.VALUE = 0.5 )
+    
+    cat( paste( "\n\nPublished studies within absolute caliper of truth: \n", sep = "" ) )
     print( cbind( .prox, prop.calip ) )
+    
+    cat( paste( "\nWithout selectivity: \n", sep = "" ) )
+    print( cbind( .prox, prop.calip2 ) )
+
   }
 
   
   ##### Avg Distance: Distance of Reported Value from Truth #####
-  if ( .scale == "X" ) {
-  
-    # uses caliper as absolute deviation
-    dist = abs( dp$Xi - dp$theta )
-      
-    cat( paste( "\n\nMedian distance of published finding from truth: ", round( median(dist), 2 ),
-                "\n", sep = "" ) )
-    cat( paste( "\n\nMedian distance (no selectivity): ", round( median( abs( d$Xi - d$theta ) ), 2 ),
-                "\n\n", sep = "" ) )
-  }
-  
-  if ( .scale == "Z" ) {
 
     # uses caliper as absolute deviation
-    dist = abs( dp$Zi - dp$theta )
-    
-    cat( paste( "\n\nMedian distance of published finding from truth: ", median(dist),
+    dist = abs( dp$xvar - dp$theta )
+      
+    cat( paste( "\nMedian distance of published finding from truth: ", round( median(dist), 2 ),
+                "\n", sep = "" ) )
+    cat( paste( "Without selectivity: ", round( median( abs( d$xvar - d$theta ) ), 2 ),
                 "\n\n", sep = "" ) )
-  }
+
+  
+  ##### Proportion of Times the Reported Effect Size is Larger in Magnitude Than Truth #####
+    prop.bigger = prop.table( table( dp$bigger ) )[["TRUE"]]  
+    prop.bigger.2 = prop.table( table( d$bigger ) )[["TRUE"]]  
+  
+    cat( paste( "\nProp. published studies larger magnitude than truth: ", round( prop.bigger, 2 ),
+                "\n", sep = "" ) )
+    cat( paste( "Without selectivity: ", round( prop.bigger.2, 2 ),
+                "\n\n", sep = "" ) )
+  
   
   ##### Credibility: Proportion Above Each Threhsold #####
   # credibility for each threshold
@@ -191,17 +196,16 @@ credibility = function( .n = 100000, .plot.n = 1000,
                        FUN = function(t) sum( temp$theta > t ) / nrow(temp),
                        FUN.VALUE = 0.5 )
   
+  cat( paste( "P( theta > thresh | Z > 1.96 ): \n", sep = "" ) )
   print( cbind( .thresh, prop.above ) )
   
   
   ##### Scatterplot #####
   # draw random sample for plotting
   if ( .plot.type == "scatter" ) {
-    samp = d[ sample( 1:nrow(d), replace = TRUE, size = .plot.n ), ]
     
-    # add new column for plotting to ensure it's on same scale as theta
-    if ( .scale == "Z" ) samp$xvar = samp$Zi
-    else if ( .scale == "X" ) samp$xvar = samp$Xi
+    samp = d[ sample( 1:nrow(d), replace = TRUE, size = .plot.n ), ]
+
     
     library(ggplot2)
     colors = c("grey", "black")
@@ -209,15 +213,29 @@ credibility = function( .n = 100000, .plot.n = 1000,
                                         y = samp$theta, color = (samp$publish == 1) ) ) +
       geom_abline( intercept=0, slope=1, color = "grey" ) +
       geom_point( size = 1.5 ) +
+      
+      #geom_smooth( data = subset(samp, publish==1), method='loess', formula=y~x, se=F ) +
+      
+      # stat_smooth(aes(weight = weight), method='lm')
+      
+      # stat_smooth( method = "loess",
+      #              formula = y ~ x, size = 1 ) +
+
+      #stat_smooth( data = dp, aes(x = dp$xvar, y = dp$theta) ) +
+      
+      #bookmark
+      
       scale_color_manual(values=colors) +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
       scale_y_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
-      annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange") +
       theme_bw() +
       xlab( paste( "Study estimate on ", .scale, " scale", sep = "" ) ) +
       ylab( paste( "True effect size on ", .scale, " scale", sep = "" ) ) +
       ggtitle( "All studies (shaded: Z > 1.96)") +
       guides(color=guide_legend(title="Published"))
+    
+    # shade significant ones
+    if ( .scale == "Z" ) scatter = scatter + annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange")
     
     for ( t in .thresh ) {
       scatter = scatter + geom_hline( yintercept = t, linetype=2, color = "red" )
@@ -227,13 +245,47 @@ credibility = function( .n = 100000, .plot.n = 1000,
   }
   
   
+  
+  
+  
+  if ( .plot.type == "smooth" ) {
+    
+    library(ggplot2)
+    colors = c("grey", "black")
+    smooth = ggplot( data = dp, aes( x = xvar,
+                                        y = theta ) ) +
+      geom_abline( intercept=0, slope=1, color = "grey" ) +
+      #geom_point( size = 1.5 ) +
+      
+      stat_smooth( ) +
+      
+      scale_color_manual(values=colors) +
+      scale_x_continuous(limits=c(0,5), breaks=seq(0, 5, 1)) +
+      scale_y_continuous(limits=c(-2,7), breaks=seq(-2, 7, 1)) +
+      #annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange") +
+      theme_bw() +
+      xlab( paste( "Study estimate on ", .scale, " scale", sep = "" ) ) +
+      ylab( paste( "True effect size on ", .scale, " scale", sep = "" ) ) +
+      ggtitle( "Published studies") +
+      guides(color=guide_legend(title="Published"))
+      
+      if (.plot.type == "Z") smooth = smooth + geom_vline( yintercept = 1.96, linetype=2, color = "red" )
+    # for ( t in .thresh ) {
+    #   smooth = smooth + geom_hline( yintercept = t, linetype=2, color = "red" )
+    # }
+    
+    plot(smooth)
+  }
+  
+  
+  
+  
+  
   ##### Distance-From-Truth Scatterplot #####
   # draw random sample for plotting
   if ( .plot.type == "dist" ) {
   
     samp = d[ sample( 1:nrow(d), replace = TRUE, size = .plot.n ), ]
-    
-   # browser()
     
     # add new column for plotting to ensure it's on same scale as theta
     if ( .scale == "Z" ) samp$xvar = samp$Zi
@@ -241,24 +293,28 @@ credibility = function( .n = 100000, .plot.n = 1000,
     
     library(ggplot2)
     colors = c("grey", "black")
-    scatter = ggplot( data = samp, aes( x = samp$xvar, y = abs( samp$xvar - samp$theta ),
+    dist = ggplot( data = samp, aes( x = samp$xvar, y = abs( samp$xvar - samp$theta ),
                                         color = (samp$publish == 1) ) ) +
       geom_point( size = 1.5 ) +
       scale_color_manual(values=colors) +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
       scale_y_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +
-      annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange") +
       theme_bw() +
       xlab( paste( "Study estimate on ", .scale, " scale", sep = "" ) ) +
       ylab( paste( "Distance from truth on ", .scale, " scale", sep = "" ) ) +
       ggtitle( "All studies (shaded: Z > 1.96)") +
       guides(color=guide_legend(title="Published"))
     
+     if ( .scale == "Z" ) {
+       dist = dist + annotate("rect", xmin=1.96, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.2, fill="orange")
+     }
+
+    
     for ( t in .thresh ) {
-      scatter = scatter + geom_hline( yintercept = t, linetype=2, color = "red" )
+      dist = dist + geom_hline( yintercept = t, linetype=2, color = "red" )
     }
     
-    plot(scatter)
+    plot(dist)
   }
   
   
@@ -273,7 +329,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
       stat_function( fun = function(x) inv_ecdf( value = x, numbers = dp$theta[ dp$signif.pos == TRUE ] ),
                      aes( color = "With selectivity (MLEs)" ), lwd=1.5 ) +
       
-      stat_function( fun = function(x) inv_ecdf( value = x, numbers = Dp$theta[ Dp$signif.pos == TRUE ] ),
+      stat_function( fun = function(x) inv_ecdf( value = x, numbers = d$theta[ d$signif.pos == TRUE ] ),
                      aes( color = "No selectivity (publish everything)" ), lwd=1 ) +
       theme_bw() +
       xlab("True effect size") + ylab("Proportion above") +
@@ -301,7 +357,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
     colors = c("red", "grey", "orange")
 
     E2 = ggplot( data = dp, aes( dp$Zi ) ) +
-<<<<<<< HEAD
+
       stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ),
                  show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
       
@@ -310,11 +366,11 @@ credibility = function( .n = 100000, .plot.n = 1000,
       
       stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ),
                  show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
-=======
+
       stat_ecdf( data = d, aes( x = d$Zi, color = "No selectivity (publish everything)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
       stat_ecdf( aes( color = "With user-specified selectivity" ), show.legend = TRUE, lwd = 1.5 ) +  # ECDF of simulated data
       stat_ecdf( data = s, aes( x = s$tr, color = "Empirical (random signs)" ), show.legend = TRUE, lwd = 1 ) +  # ECDF without selectivity (all findings)
->>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
+
       theme_bw() +
       scale_color_manual( name = " ", values = colors) +
       scale_x_continuous(limits=c(-6,6), breaks=seq(-6, 6, 1)) +

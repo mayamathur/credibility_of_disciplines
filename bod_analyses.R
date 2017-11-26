@@ -1,35 +1,23 @@
 
 ############################## EXPLORE DATA ##############################
 
-
-
 setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git")
 s = read.csv("Data from Ioannidis/full_data.csv")
 dim(s)  # expected: 23509
 
-# 31% nonsignificant
-# 6% marginally significant
-# 63% significant
-prop.table( table( s$t > 1.96 ) )
-prop.table( table( s$t > 1.64 & s$t < 1.96 ) )
-prop.table( table( s$t < 1.64 ) )
 
 
 ############################## RUN AK META-STUDY ALGORITHM ##############################
 
 # run AK algorithm
-setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/Analysis/AK code modified/Replication R Code/R Code")
+setwd("AK code modified/Replication R Code/R")
 # source("ApplicationScript.R")
 
 
 
 ############################## SIMULATE USING AK'S MLES ##############################
 
-<<<<<<< HEAD
-=======
-source("helper.R")
 
->>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
 ######## Z scale ########
 
 # from running AK with Z-scores
@@ -39,10 +27,12 @@ bp2Z = 0.4464266
 mu = 0
 tau.tilde = 2.118972  
 
-<<<<<<< HEAD
+
+setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git")
+
 source("helper.R")
 credibility( .n = 10000,
-               .plot.n = 10000,
+               .plot.n = 1500,
                .bp0 = bp0Z,
                .bp1 = bp1Z,
                .bp2 = bp2Z,
@@ -63,6 +53,8 @@ credibility( .n = 10000,
 # with horrible selectivity: 18%
 
 
+
+
 ######## X scale ########
 
 # from running AK with raw effect sizes
@@ -72,43 +64,81 @@ bp2X = 0.491
 tau = 0.584
 mu = 0
 
+setwd("~/Dropbox/Personal computer/Independent studies/BOD (believability of disciplines)/bod_git")
 source("helper.R")
 credibility( .n = 10000,
-             .plot.n = 500,
-             .bp0 = bp0X,
-             .bp1 = bp1X,
-             .bp2 = bp2X,
-             # .bp0 = 1,
-             # .bp1 = 0,
-             # .bp2 = 0,
+             .plot.n = 1000,
+             # .bp0 = bp0X,
+             # .bp1 = bp1X,
+             # .bp2 = bp2X,
+             .bp0 = 1,
+             .bp1 = 0,
+             .bp2 = 0,
              .mu = mu,
              .SEs = s$SE,
              .tau = tau,
-             .thresh = c( 0, 0.2 ),
-             .prox = .1,
+             .thresh = c(0, 0.2),
+             .prox = c(.1, .2),
              .incl.ref = TRUE,
              .scale = "X",
-             .plot.type = "dist" )
-
-# median distance from truth:
-# without selectivity:
-# with MLE selectivity: 0.16
-# with horrible selectivity: 0.17
-# THIS SEEMS WRONG. FIX IT. 
-
-# treating caliper as proportion of true effect: 
-# without selectivity: 35% of published studies are within 25% of truth
-# with MLE selectivity: 41%
-# with horrible selectivity: 54%
-
-# treating caliper as absolute deviation from true effect:
-# without selectivity: 33%
-# with MLE selectivity: 33%
-# with horrible selectivity: 36%
+             .plot.type = "scatter" )
 
 
 
-# in scatterplot, being farther from 45-degree line => larger distance between est and truth
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#                           RECONCILE WITH AK'S PLOT 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+dX = sim_X( .n = 100000, .mu = mu, .tau = tau, .SEs = s$SE * 4,
+            .bp0 = bp0X, .bp1 = bp1X, .bp2 = bp2X ) 
+
+# dX = sim_X( .n = 10000, .mu = mu, .tau = tau, .SEs = s$SE * 4,
+#             .bp0 = 1, .bp1 = 0, .bp2 = 0 ) 
+
+
+
+dZ = sim_Z( .n = 1000000, .mu = mu, .tau.tilde = tau.tilde,
+            .bp0 = bp0Z, .bp1 = bp1Z, .bp2 = bp2Z ) 
+dp = dZ[ dZ$publish == TRUE, ]
+
+
+# distance from truth by significance
+aggregate( abs( Xi - theta ) ~ abs( Zi ) > 1.96, data = dX, FUN = median)
+
+# 0.005 threshold
+aggregate( abs( Xi - theta ) ~ abs( Zi ) > qnorm( 1 - .005/2 ), data = dX, FUN = median)
+
+# should match corrected inference (1.40 for median) in AK's generated CSV file
+# run with n = 1,000,000
+dp$close = abs( dp$Zi - 1.96 ) < .01
+table(dp$close)
+
+
+###### Sanity Check: Does AK's Corrected Inference Work? #####
+
+# AK's correction
+# look at the theta such that, conditional on that theta, the median observed Z is 1.96
+# i.e., a horizontal cross-section of scatterplot
+
+# check whether this holds up in the simulated data
+# by considering the thetas that are close to the median-unbiased estimate
+# each 
+dp$close.theta = abs( dp$theta - 1.389 ) < .01
+table(dp$close.theta)
+prop.table( table( dp$Zi[dp$close.theta] < 1.96 ) )
+# yes! close to 50% :)
+
+dp$close.theta = abs( dp$theta - 1.594 ) < .01
+table(dp$close.theta)
+prop.table( table( dp$Zi[dp$close.theta] < 2.1 ) )
+# yes! close to 50% :)
+
+dp$close.theta = abs( dp$theta - 1.909 ) < .01
+table(dp$close.theta)
+prop.table( table( dp$Zi[dp$close.theta] < 2.31 ) )
+# yes! close to 50% :)
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -118,11 +148,17 @@ credibility( .n = 10000,
 # what are the true pre-study odds based on AK's MLEs and using Ioannidis' coarsening?
 source("helper.R")
 
-d = sim_X( .n = 10000, .mu = mu, .tau = tau, .SEs = s$SE,
+# 
+# dZ = sim_Z( .n = 10000, .mu = mu, .tau.tilde = tau.tilde,
+#            .bp0 = bp0Z, .bp1 = bp1Z, .bp2 = bp2Z ) 
+# dZ = sim_Z( .n = 10000, .mu = mu, .tau.tilde = tau.tilde,
+#             .bp0 = 1, .bp1 = 1, .bp2 = 1 ) 
+
+dX = sim_X( .n = 10000, .mu = mu, .tau = tau, .SEs = s$SE,
                   .bp0 = bp0X, .bp1 = bp1X, .bp2 = bp2X ) 
 
 # proportion true effects closer to d = 0 than d = 0.2
-( tab = prop.table( table( abs( d$Xi ) <= 0.1 ) ) )
+( tab = prop.table( table( abs( dX$Xi ) <= 0.1 ) ) )
 ( prob.H0 = tab[["TRUE"]] )
 
 # correct coarsened prior odds of H0:H1
@@ -153,7 +189,6 @@ frp_0( O = 1, alpha = 0.05, pwr = .5 )
 
 
 
-=======
 credibility( .n = 5000,
                .plot.n = 5000,
                .bp0 = bp0,
@@ -166,7 +201,7 @@ credibility( .n = 5000,
                .scale = "Z",
                .plot.type = "ECDF.theta" )
 
->>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
+
 
 ######## X scale ########
 
@@ -177,8 +212,7 @@ bp2 = 0.491
 tau = 0.584
 mu = 0
 
-<<<<<<< HEAD
-=======
+
 # on X scale
 credibility( .n = 5000,
              .plot.n = 5000,
@@ -192,7 +226,7 @@ credibility( .n = 5000,
              .incl.ref = TRUE,
              .scale = "X",
              .plot.type = "ECDF.theta" )
->>>>>>> 3327ed475b08aa40e5ed050cfabb1358f6b83fdb
+
 
 
 
