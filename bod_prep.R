@@ -96,3 +96,7 @@ set.seed(451); s = d[ sample( 1 : nrow(d), size = n ), ]
 
 write.csv( s, "random_sample.csv" )
 write.csv( d, "full_data.csv" )
+
+
+
+

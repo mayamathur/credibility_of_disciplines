@@ -2,6 +2,59 @@
 ############################## HELPER FUNCTIONS ##############################
 
 
+
+######## Fn: Simulate Raw Effect Sizes As in JM Paper ########
+
+# JM = first and senior authors
+# this is more general than sim_X in that it allows point mass at 0 for true effects
+
+# default parameters are for normal
+sim_X_JM = function( .n, .mu = 0, .tau = .1845, .pi0 = .886, .SEs,
+                  .alpha = 0.00608, .model ) {
+  
+  # draw HA indicator
+  H0 = rbinom( n = .n, size = 1, prob = .pi0 )
+  
+  if ( .model == "normal" ) {
+    # draw true effect vector under normal model
+    theta = rnorm( n = .n, mean = .mu,  sd = .tau )
+  }
+  
+  if ( .model == "moment" ) {
+    # draw true effect vector under moment model
+    library(distr)
+    
+    pdf = function(x) ( (x^2) / ( .tau^(3/2) * sqrt( 2 * pi ) ) ) * exp( -(x^2) / (2 * .tau) )
+    dist = AbscontDistribution(d=pdf)  # signature for a dist with pdf ~ p
+    rmom = r(dist) # function to simulate
+    theta = rmom(.n)
+  }
+
+ 
+  theta[ H0 == TRUE ] = 0  # create point mass
+  
+  # sample from SEs
+  SE = sample( .SEs, size = .n, replace = TRUE )
+  
+  # draw latent study for each
+  Xi = rnorm( n = .n, mean = theta, sd = SE )
+  Zi = Xi / SE
+  
+  d = data.frame( theta, Xi, SE, Zi, H0 )
+  
+  # draw publication indicator
+  library(car)
+  d$publish.prob = rep( 1, .n )
+  d$publish.prob[ abs( d$Zi ) < 1.96 ] = .alpha
+  d$publish = rbinom( size = 1, n = .n, prob = d$publish.prob )
+  
+  d$signif.pos = d$Zi > 1.96
+  
+  invisible( return(d) )
+}
+
+
+
 ######## Fns: Ioannidis FRPs ########
 # see Ioannidis' first equation
 frp_0 = function( O, alpha, pwr ) {
@@ -136,21 +189,25 @@ credibility = function( .n = 100000, .plot.n = 1000,
     d$xvar = d$Xi
   }
   
+  browser()
+  
   # is study estimate farther from null than truth or in wrong direction?
   d$bigger = FALSE
   d$bigger[ d$theta > 0 ] = d$xvar[ d$theta > 0 ] > d$theta[ d$theta > 0 ]
   d$bigger[ d$theta < 0 ] = d$xvar[ d$theta < 0 ] < d$theta[ d$theta < 0 ]
   
   dp = d[ d$publish == TRUE, ]
-  
+  ds = d[ d$signif.pos == TRUE, ]
 
+  
+  
 
   ##### Proximity: Proportion Within Caliper of Truth #####
   if ( any( !is.na(.prox) ) ) {
 
     # published
     prop.calip = vapply( X = .prox,
-                         FUN = function(t) sum( abs( dp$xvar - dp$theta ) <= t ) /
+                         FUN = function(t) sum( abs( ds$xvar - ds$theta ) <= t ) /
                            nrow(dp),
                          FUN.VALUE = 0.5 )
     # no selectivity
@@ -159,7 +216,7 @@ credibility = function( .n = 100000, .plot.n = 1000,
                            nrow(d),
                          FUN.VALUE = 0.5 )
     
-    cat( paste( "\n\nPublished studies within absolute caliper of truth: \n", sep = "" ) )
+    cat( paste( "\n\n Z>1.96 studies within absolute caliper of truth: \n", sep = "" ) )
     print( cbind( .prox, prop.calip ) )
     
     cat( paste( "\nWithout selectivity: \n", sep = "" ) )
@@ -168,22 +225,35 @@ credibility = function( .n = 100000, .plot.n = 1000,
   }
 
   
-  ##### Avg Distance: Distance of Reported Value from Truth #####
+  ##### Median Absolute Distance: Distance of Reported Value from Truth #####
 
     # uses caliper as absolute deviation
-    dist = abs( dp$xvar - dp$theta )
+    dist = abs( ds$xvar - ds$theta )
       
-    cat( paste( "\nMedian distance of published finding from truth: ", round( median(dist), 2 ),
+    cat( paste( "\nMedian distance of Z > 1.96 finding from truth: ", round( median(dist), 2 ),
                 "\n", sep = "" ) )
     cat( paste( "Without selectivity: ", round( median( abs( d$xvar - d$theta ) ), 2 ),
                 "\n\n", sep = "" ) )
 
+    
+    # ##### Mean Absolute Distance: Distance of Reported Value from Truth #####
+    # cat( paste( "\nMean distance of published finding from truth: ", round( mean(dist), 2 ),
+    #             "\n", sep = "" ) )
+    # cat( paste( "Without selectivity: ", round( mean( abs( d$xvar - d$theta ) ), 2 ),
+    #             "\n\n", sep = "" ) )
+    
+    
+    ##### Bias #####
+    cat( paste( "\nMean bias of Z > 1.96 findings: ", round( mean(ds$xvar - ds$theta), 2 ),
+                "\n", sep = "" ) )
+    cat( paste( "Without selectivity: ", round( mean(d$xvar - d$theta), 2 ),
+                "\n\n", sep = "" ) )
   
   ##### Proportion of Times the Reported Effect Size is Larger in Magnitude Than Truth #####
-    prop.bigger = prop.table( table( dp$bigger ) )[["TRUE"]]  
+    prop.bigger = prop.table( table( ds$bigger ) )[["TRUE"]]  
     prop.bigger.2 = prop.table( table( d$bigger ) )[["TRUE"]]  
   
-    cat( paste( "\nProp. published studies larger magnitude than truth: ", round( prop.bigger, 2 ),
+    cat( paste( "\nProp. of Z > 1.96 studies larger magnitude than truth: ", round( prop.bigger, 2 ),
                 "\n", sep = "" ) )
     cat( paste( "Without selectivity: ", round( prop.bigger.2, 2 ),
                 "\n\n", sep = "" ) )
@@ -191,9 +261,8 @@ credibility = function( .n = 100000, .plot.n = 1000,
   
   ##### Credibility: Proportion Above Each Threhsold #####
   # credibility for each threshold
-  temp = d[ d$signif.pos == TRUE, ]
   prop.above = vapply( X = .thresh,
-                       FUN = function(t) sum( temp$theta > t ) / nrow(temp),
+                       FUN = function(t) sum( ds$theta > t ) / nrow(ds),
                        FUN.VALUE = 0.5 )
   
   cat( paste( "P( theta > thresh | Z > 1.96 ): \n", sep = "" ) )
